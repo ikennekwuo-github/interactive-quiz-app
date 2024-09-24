@@ -25,8 +25,7 @@ Prerequisites
 Installation
 Clone the repository:
 
-git clone https://github.com/your-username/interactive-quiz-app.git
-
+git clone https://github.com/ikennekwuo-github/interactive-quiz-app
 Navigate to the project directory:
 
 cd interactive-quiz-app
@@ -58,7 +57,6 @@ projectquiz-main/
 │   ├── server.js
 │   ├── populateDb.js
 │   ├── .env
-│   ├── .gitignore
 │   ├── package.json
 │   └── package-lock.json
 └── README.md
