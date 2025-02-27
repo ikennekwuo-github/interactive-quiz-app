@@ -1,42 +1,58 @@
-const express = require("express");
-const mongoose = require("mongoose");
+const express = require('express');
+const mongoose = require('mongoose');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const dotenv = require('dotenv');
+const bodyParser = require('body-parser');
+const { body, validationResult } = require('express-validator');
+
+dotenv.config();
+
 const app = express();
-const PORT = 12000;
-
-// Make sure you've set up your .env file with the MONGODB_URI
-require("dotenv").config();
-
+const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI;
 
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => console.log("Connected to MongoDB Atlas"))
-  .catch((err) => console.error("Error connecting to MongoDB Atlas:", err));
+if (!MONGODB_URI) {
+    console.error('Error: MONGODB_URI is not defined in the environment variables.');
+    process.exit(1);
+}
 
-app.use(express.json());
-app.use(express.static("public"));
+mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => {
+        console.error('Error connecting to MongoDB:', err);
+        process.exit(1);
+    });
 
-const { Question, Score } = require("./models");
+app.use(helmet());
+app.use(bodyParser.json());
 
-app.get("/api/questions", async (req, res) => {
-  try {
-    const questions = await Question.find();
-    res.json(questions);
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.'
 });
 
-app.post("/api/scores", async (req, res) => {
-  try {
-    const score = new Score(req.body);
-    await score.save();
-    res.status(201).send();
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
+app.use(limiter);
+
+app.post('/submit-quiz', [
+    body('username').isString().isLength({ min: 3 }).trim().escape(),
+    body('answers').isArray().notEmpty()
+], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Process the quiz submission
+    res.status(200).json({ message: 'Quiz submitted successfully' });
+});
+
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });

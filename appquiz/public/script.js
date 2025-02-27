@@ -1,74 +1,60 @@
-let currentQuestionIndex = 0;
-let score = 0;
-let questions = [];
-let selectedAnswer = null;
-
-fetch("/api/questions")
-  .then((response) => response.json())
-  .then((data) => {
-    questions = data;
-    loadQuestion();
-  });
-
-function loadQuestion() {
-  const question = questions[currentQuestionIndex];
-  document.getElementById("question").textContent = question.question;
-  const answersDiv = document.getElementById("answers");
-  answersDiv.innerHTML = "";
-  question.answers.forEach((answer, index) => {
-    const button = document.createElement("button");
-    button.textContent = answer;
-    button.onclick = () => selectAnswer(index);
-    answersDiv.appendChild(button);
-  });
-  document.getElementById("next-button").style.display = "none";
-  selectedAnswer = null;
-}
-
-function selectAnswer(index) {
-  if (selectedAnswer !== null) return;
-  selectedAnswer = index;
-  const buttons = document.querySelectorAll("#answers button");
-  buttons[index].classList.add("selected");
-  document.getElementById("next-button").style.display = "block";
-  checkAnswer(index);
-}
-
-function checkAnswer(selectedIndex) {
-  const question = questions[currentQuestionIndex];
-  const buttons = document.querySelectorAll("#answers button");
-  buttons[question.correct].classList.add("correct");
-  if (selectedIndex === question.correct) {
-    score++;
-  } else {
-    buttons[selectedIndex].classList.add("incorrect");
+// Function to fetch quiz data
+async function fetchQuizData(url) {
+  try {
+      const response = await fetch(url);
+      if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+  } catch (error) {
+      console.error('Error fetching quiz data:', error);
+      alert('Failed to fetch quiz data. Please try again later.');
   }
 }
 
-document.getElementById("next-button").onclick = () => {
-  currentQuestionIndex++;
-  if (currentQuestionIndex < questions.length) {
-    loadQuestion();
-  } else {
-    showScore();
-  }
-};
+// Function to render quiz
+function renderQuiz(quiz) {
+  const quizContainer = document.getElementById('quiz-container');
+  quizContainer.innerHTML = '';
 
-function showScore() {
-  document.getElementById("quiz-container").innerHTML = `
-        <h1>Quiz Completed!</h1>
-        <p>Your score: ${score}/${questions.length}</p>
-        <button onclick="location.reload()">Restart Quiz</button>
-    `;
-  submitScore(score);
-}
+  quiz.questions.forEach((question, index) => {
+      const questionElement = document.createElement('div');
+      questionElement.className = 'question';
 
-function submitScore(userScore) {
-  fetch("/api/scores", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ user: "User1", score: userScore }),
+      const questionText = document.createElement('h2');
+      questionText.textContent = `${index + 1}. ${question.questionText}`;
+      questionElement.appendChild(questionText);
+
+      question.options.forEach(option => {
+          const optionElement = document.createElement('div');
+          optionElement.className = 'option';
+
+          const optionInput = document.createElement('input');
+          optionInput.type = 'radio';
+          optionInput.name = `question${index}`;
+          optionInput.value = option.optionText;
+          optionElement.appendChild(optionInput);
+
+          const optionLabel = document.createElement('label');
+          optionLabel.textContent = option.optionText;
+          optionElement.appendChild(optionLabel);
+
+          questionElement.appendChild(optionElement);
+      });
+
+      quizContainer.appendChild(questionElement);
   });
 }
+
+// Function to initialize the quiz app
+async function initQuizApp() {
+  const quizDataUrl = 'path/to/your/quiz/data.json';
+  const quizData = await fetchQuizData(quizDataUrl);
+  if (quizData) {
+      renderQuiz(quizData);
+  }
+}
+
+// Initialize the quiz app on page load
+document.addEventListener('DOMContentLoaded', initQuizApp);

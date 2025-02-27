@@ -1,0 +1,7 @@
+# Ignore environment variables file
+.env
+
+# .gitignore
+MONGODB_URI=mongodb+srv://ikennekwuo:HDw9IvXT9I1uvXpn@cluster0.dpx5p.mongodb.net/your_db_name?retryWrites=true&w=majority&appName=Cluster0
+
+PORT=3000
